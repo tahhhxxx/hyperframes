@@ -1,0 +1,30 @@
+name: Render Compositions
+
+on:
+  push:
+    paths:
+      - 'compositions/**'
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install FFmpeg
+        run: sudo apt-get install -y ffmpeg
+
+      - name: Render
+        run: npx hyperframes render
+
+      - name: Upload MP4 artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: rendered-mp4
+          path: '**/*.mp4'
