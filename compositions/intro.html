@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hello HyperFrames</title>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: #0f0f0f;
+    }
+
+    #comp-intro {
+      position: absolute;
+      inset: 0;
+      width: 1920px;
+      height: 1080px;
+    }
+
+    #bg {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, #0f0f0f 0%, #1a1a2e 100%);
+    }
+
+    /* Subtle radial glow in center */
+    #bg::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(66, 66, 180, 0.12) 0%, transparent 70%);
+    }
+
+    #title-wrap {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 32px;
+    }
+
+    #title {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 96px;
+      font-weight: 700;
+      letter-spacing: -2px;
+      color: #ffffff;
+      opacity: 0;
+      transform: translateY(40px);
+      text-shadow: 0 0 80px rgba(100, 100, 255, 0.4);
+    }
+
+    #subtitle {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 28px;
+      font-weight: 300;
+      letter-spacing: 8px;
+      color: rgba(255, 255, 255, 0.45);
+      opacity: 0;
+      text-transform: uppercase;
+    }
+
+    #line {
+      width: 0px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(120, 120, 255, 0.7), transparent);
+    }
+  </style>
+</head>
+<body>
+  <div
+    id="comp-intro"
+    data-composition-id="intro"
+    data-start="0"
+    data-duration="10"
+    data-width="1920"
+    data-height="1080"
+  >
+    <!-- Background -->
+    <div
+      id="bg-clip"
+      data-start="0"
+      data-duration="10"
+      data-track-index="0"
+      style="position:absolute;inset:0;z-index:1;"
+    >
+      <div id="bg"></div>
+    </div>
+
+    <!-- Title content -->
+    <div
+      id="title-clip"
+      data-start="0"
+      data-duration="10"
+      data-track-index="1"
+      style="position:absolute;inset:0;z-index:2;"
+    >
+      <div id="title-wrap">
+        <div id="line"></div>
+        <h1 id="title">Hello HyperFrames</h1>
+        <p id="subtitle">HTML · Animation · Video</p>
+      </div>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+
+      // Line expands first
+      tl.to("#line", {
+        width: 320,
+        duration: 0.8,
+        ease: "power2.out"
+      }, 0.5);
+
+      // Title fades in + rises
+      tl.to("#title", {
+        opacity: 1,
+        y: 0,
+        duration: 1.2,
+        ease: "power3.out"
+      }, 0.9);
+
+      // Subtitle fades in
+      tl.to("#subtitle", {
+        opacity: 1,
+        duration: 1.0,
+        ease: "power2.out"
+      }, 1.6);
+
+      // Hold, then fade out everything at the end
+      tl.to("#title-clip", {
+        opacity: 0,
+        duration: 1.0,
+        ease: "power2.in"
+      }, 8.5);
+
+      tl.to("#bg-clip", {
+        opacity: 0,
+        duration: 1.0,
+        ease: "power2.in"
+      }, 8.5);
+
+      // Sentinel — keep timeline extending to full duration
+      tl.set({}, {}, 10);
+
+      window.__timelines["intro"] = tl;
+    </script>
+  </div>
+</body>
+</html>
