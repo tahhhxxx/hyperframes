@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {
+        margin: 0; width: 1920px; height: 1080px;
+        overflow: hidden; background: #0a0a1a;
+      }
+      #root { width: 1920px; height: 1080px; position: relative; }
+
+      .scene {
+        position: absolute; inset: 0;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+      }
+
+      /* Scene 1 */
+      #s1 { background: linear-gradient(135deg, #0a0a1a 0%, #1e1b4b 100%); }
+      #s1-title {
+        font-family: sans-serif; font-size: 128px; font-weight: 900;
+        color: #fff; letter-spacing: -4px;
+        text-shadow: 0 0 120px #818cf8, 0 0 40px #6366f1;
+      }
+      #s1-sub {
+        font-family: sans-serif; font-size: 52px;
+        color: #a5b4fc; margin-top: 28px; letter-spacing: 2px;
+      }
+
+      /* Scene 2 */
+      #s2 { background: #0a0a1a; }
+      .feature-row {
+        display: flex; gap: 80px; align-items: center;
+      }
+      .feature {
+        font-family: sans-serif; text-align: center;
+        display: flex; flex-direction: column; align-items: center; gap: 20px;
+      }
+      .feature-icon {
+        width: 120px; height: 120px; border-radius: 24px;
+        background: #1e1b4b; border: 2px solid #4338ca;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 56px;
+      }
+      .feature-label {
+        font-size: 40px; color: #e0e7ff; font-weight: 700;
+      }
+      .feature-desc { font-size: 28px; color: #6366f1; }
+      #s2-heading {
+        font-family: sans-serif; font-size: 64px; font-weight: 800;
+        color: #fff; margin-bottom: 80px;
+      }
+
+      /* Scene 3 */
+      #s3 { background: linear-gradient(135deg, #1e1b4b 0%, #0a0a1a 100%); }
+      #s3-text {
+        font-family: sans-serif; font-size: 96px; font-weight: 900;
+        color: #818cf8; letter-spacing: -2px;
+        text-shadow: 0 0 60px #6366f1;
+      }
+      #s3-sub {
+        font-family: sans-serif; font-size: 44px; color: #c7d2fe;
+        margin-top: 24px;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="12"
+      data-width="1920"
+      data-height="1080"
+    >
+      <!-- Scene 1: タイトル 0〜5s -->
+      <div id="s1" class="clip scene"
+           data-start="0" data-duration="5" data-track-index="0">
+        <div id="s1-title">HyperFrames</div>
+        <div id="s1-sub">Write HTML. Render Video.</div>
+      </div>
+
+      <!-- Scene 2: フィーチャー 5〜9s -->
+      <div id="s2" class="clip scene"
+           data-start="5" data-duration="4" data-track-index="0">
+        <div id="s2-heading">How it works</div>
+        <div class="feature-row">
+          <div class="feature" id="f1">
+            <div class="feature-icon">📝</div>
+            <div class="feature-label">Write HTML</div>
+            <div class="feature-desc">Plain web tech</div>
+          </div>
+          <div class="feature" id="f2">
+            <div class="feature-icon">🎬</div>
+            <div class="feature-label">Add GSAP</div>
+            <div class="feature-desc">Seekable timeline</div>
+          </div>
+          <div class="feature" id="f3">
+            <div class="feature-icon">🎥</div>
+            <div class="feature-label">Render MP4</div>
+            <div class="feature-desc">Deterministic output</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scene 3: アウトロ 9〜12s -->
+      <div id="s3" class="clip scene"
+           data-start="9" data-duration="3" data-track-index="0">
+        <div id="s3-text">Open Source</div>
+        <div id="s3-sub">by HeyGen · Apache 2.0</div>
+      </div>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+
+      const tl = gsap.timeline({ paused: true });
+
+      // Scene 1: タイトルフェードイン
+      tl.from("#s1-title", { opacity: 0, y: 60, duration: 1.0, ease: "power3.out" }, 0.2)
+        .from("#s1-sub",   { opacity: 0, y: 30, duration: 0.8, ease: "power2.out" }, 1.0);
+
+      // Scene 2: フィーチャー順番に出現
+      tl.from("#s2-heading", { opacity: 0, y: -40, duration: 0.6, ease: "power2.out" }, 5.2)
+        .from("#f1", { opacity: 0, y: 50, duration: 0.5, ease: "back.out(1.5)" }, 5.8)
+        .from("#f2", { opacity: 0, y: 50, duration: 0.5, ease: "back.out(1.5)" }, 6.2)
+        .from("#f3", { opacity: 0, y: 50, duration: 0.5, ease: "back.out(1.5)" }, 6.6);
+
+      // Scene 3: アウトロ
+      tl.from("#s3-text", { opacity: 0, scale: 0.8, duration: 0.7, ease: "back.out(1.7)" }, 9.3)
+        .from("#s3-sub",  { opacity: 0,             duration: 0.5, ease: "power2.out"     }, 10.1);
+
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

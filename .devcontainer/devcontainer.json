@@ -1,0 +1,9 @@
+{
+  "name": "HyperFrames",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
+  "hostRequirements": {
+    "cpus": 2,
+    "memory": "8gb"
+  },
+  "postCreateCommand": "sudo apt-get update && sudo apt-get install -y ffmpeg chromium"
+}
