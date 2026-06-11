@@ -30,3 +30,4 @@ jobs:
         with:
           name: rendered-mp4
           path: my-video/output.mp4
+          
