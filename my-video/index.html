@@ -1,140 +1,456 @@
 <!doctype html>
-<html lang="en">
+<html lang="ja">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=1920, height=1080" />
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@hyperframes/core/dist/hyperframe.runtime.iife.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@hyperframes/shader-transitions/dist/index.global.js"></script>
     <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      html, body {
-        margin: 0; width: 1920px; height: 1080px;
-        overflow: hidden; background: #0a0a1a;
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
       }
-      #root { width: 1920px; height: 1080px; position: relative; }
+      html,
+      body {
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #000;
+      }
 
+      /* ===== 固定背景：額縁＋天使（動かさない） ===== */
+      .bg {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+      }
+      .frame-img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 1920px;
+        height: 1080px;
+        object-fit: cover;
+        z-index: 1;
+      }
+      .angel-wrap {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 1920px;
+        height: 1080px;
+        padding: 94px 116px;
+        overflow: hidden;
+        z-index: 2;
+      }
+      .angel-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      /* ===== 合成（HyperFrames） ===== */
+      #main {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+      }
       .scene {
-        position: absolute; inset: 0;
-        display: flex; flex-direction: column;
-        align-items: center; justify-content: center;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+      }
+      .scene-content {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        z-index: 1;
+      }
+      .clip {
       }
 
-      /* Scene 1 */
-      #s1 { background: linear-gradient(135deg, #0a0a1a 0%, #1e1b4b 100%); }
-      #s1-title {
-        font-family: sans-serif; font-size: 128px; font-weight: 900;
-        color: #fff; letter-spacing: -4px;
-        text-shadow: 0 0 120px #818cf8, 0 0 40px #6366f1;
+      /* ===== テキスト層 ===== */
+      .text-layer {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
-      #s1-sub {
-        font-family: sans-serif; font-size: 52px;
-        color: #a5b4fc; margin-top: 28px; letter-spacing: 2px;
+      /* 全シーンのボックスを同じグリッドセルに重ねる（中央配置） */
+      .band-grid {
+        display: grid;
+        place-items: center;
       }
-
-      /* Scene 2 */
-      #s2 { background: #0a0a1a; }
-      .feature-row {
-        display: flex; gap: 80px; align-items: center;
+      .band-grid > .text-band {
+        grid-area: 1 / 1;
       }
-      .feature {
-        font-family: sans-serif; text-align: center;
-        display: flex; flex-direction: column; align-items: center; gap: 20px;
+      /* 黒半透明ボックス：テキストを内包し padding:100px でサイズが決まる（幅・高さ固定にしない） */
+      .text-band {
+        position: relative;
+        max-width: 1688px;
+        background: rgba(0, 0, 0, 0.35);
+        /* 可視状態は GSAP が opacity で制御（ボックスごとフェードアウト） */
+        opacity: 0;
       }
-      .feature-icon {
-        width: 120px; height: 120px; border-radius: 24px;
-        background: #1e1b4b; border: 2px solid #4338ca;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 56px;
+      /* シーンごとのテキストブロック */
+      .block {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4em;
+        padding: 100px;
       }
-      .feature-label {
-        font-size: 40px; color: #e0e7ff; font-weight: 700;
+      .line {
+        margin: 0;
+        color: #ffffff;
+        text-align: center;
+        font-family: "Yu Mincho", "Hiragino Mincho ProN", serif;
+        font-size: 88px;
+        font-weight: 600;
+        line-height: 1.5;
+        letter-spacing: normal;
+        text-shadow:
+          0 2px 8px rgba(0, 0, 0, 0.75),
+          0 0 24px rgba(0, 0, 0, 0.5);
+        opacity: 1;
+        white-space: nowrap;
       }
-      .feature-desc { font-size: 28px; color: #6366f1; }
-      #s2-heading {
-        font-family: sans-serif; font-size: 64px; font-weight: 800;
-        color: #fff; margin-bottom: 80px;
+      .hl {
+        display: inline-block;
+        transform-origin: center center;
+        will-change: transform, color;
       }
-
-      /* Scene 3 */
-      #s3 { background: linear-gradient(135deg, #1e1b4b 0%, #0a0a1a 100%); }
-      #s3-text {
-        font-family: sans-serif; font-size: 96px; font-weight: 900;
-        color: #818cf8; letter-spacing: -2px;
-        text-shadow: 0 0 60px #6366f1;
-      }
-      #s3-sub {
-        font-family: sans-serif; font-size: 44px; color: #c7d2fe;
-        margin-top: 24px;
+      /* blockSpan用：ブロック全体のtransform基点 */
+      .block-span {
+        display: inline-block;
+        transform-origin: center center;
       }
     </style>
   </head>
   <body>
+    <!-- ===== 固定背景（#main の外＝常に静止） ===== -->
+    <div class="bg">
+      <img class="frame-img" src="images/frame.png" alt="額縁" />
+      <div class="angel-wrap">
+        <img class="angel-img" src="images/angel.png" alt="天使" />
+      </div>
+    </div>
+
+    <!-- ===== 台本 JSON（Untitled-1.json をそのまま） ===== -->
+    <script id="script" type="application/json">
+{
+  "meta": {
+    "title": "ツインレイ×ブルームーン 恋愛リーディング",
+    "fps": 30,
+    "width": 1920,
+    "height": 1080,
+    "totalDuration": 60.0,
+    "totalFrames": 1800,
+    "assets": { "frame": "frame.png", "background": "angel.png" },
+    "style": {
+      "fontFamily": "\"Yu Mincho\", \"Hiragino Mincho ProN\", serif",
+      "textColor": "#ffffff",
+      "bandColor": "rgba(0,0,0,0.35)"
+    },
+    "presets": {
+      "colors": { "default": "#ffffff", "gold": "#ffd27a", "platinum": "#e9eef5" },
+      "motions": {
+        "none": "色を変えるだけ。アニメーション無し（メイン運用）",
+        "glow": "色変化＋発光（text-shadow）。一度光る",
+        "glow-pulse": "発光がふわっと一度脈打って戻る",
+        "pop": "軽く拡縮（scale 1→1.08→1）"
+      }
+    },
+    "fieldGuide": {
+      "entrance": "登場アニメ。全シーン 'fade-up'（下からフェードイン）固定。アレンジ禁止。",
+      "inlineSpan": "lines内の一部の単語にかける強調。targetの文字列を<span>で包み、color/motionを適用する。",
+      "blockSpan": "シーンの全文字にかける強調。テキストブロック全体にcolor/motionを適用する。",
+      "color": "presets.colors のキー名（default/gold/platinum）。",
+      "motion": "presets.motions のキー名（none/glow/glow-pulse/pop）。none＝色だけ。"
+    }
+  },
+  "scenes": [
+    {
+      "id": "s1",
+      "sign": "ツインレイ",
+      "lines": ["今夜、ブルームーンが空に", "静かに輝いています。"],
+      "entrance": "fade-up",
+      "inlineSpan": { "target": "ブルームーン", "color": "platinum", "motion": "glow" },
+      "blockSpan": { "color": "default", "motion": "none" },
+      "start": 0.0,
+      "duration": 6.0,
+      "startFrame": 0,
+      "durationFrames": 180
+    },
+    {
+      "id": "s2",
+      "sign": "ツインレイ",
+      "lines": ["この特別な満月の夜に、", "あなたの魂は揺れています。"],
+      "entrance": "fade-up",
+      "inlineSpan": { "target": "満月", "color": "platinum", "motion": "none" },
+      "blockSpan": { "color": "default", "motion": "none" },
+      "start": 6.0,
+      "duration": 6.0,
+      "startFrame": 180,
+      "durationFrames": 180
+    },
+    {
+      "id": "s3",
+      "sign": "ツインレイ",
+      "lines": ["ツインレイとの縁は、", "今、確かに動き始めています。"],
+      "entrance": "fade-up",
+      "inlineSpan": { "target": "ツインレイ", "color": "gold", "motion": "glow-pulse" },
+      "blockSpan": { "color": "default", "motion": "none" },
+      "start": 12.0,
+      "duration": 6.0,
+      "startFrame": 360,
+      "durationFrames": 180
+    },
+    {
+      "id": "s4",
+      "sign": "ツインレイ",
+      "lines": ["離れていても、ふたりの魂は", "見えない糸で結ばれています。"],
+      "entrance": "fade-up",
+      "inlineSpan": { "target": "見えない糸", "color": "platinum", "motion": "none" },
+      "blockSpan": { "color": "platinum", "motion": "none" },
+      "start": 18.0,
+      "duration": 6.0,
+      "startFrame": 540,
+      "durationFrames": 180
+    },
+    {
+      "id": "s5",
+      "sign": "ツインレイ",
+      "lines": ["ブルームーンは統合の光。", "あなたに再会の予兆を告げます。"],
+      "entrance": "fade-up",
+      "inlineSpan": { "target": "ブルームーン", "color": "platinum", "motion": "glow" },
+      "blockSpan": { "color": "default", "motion": "none" },
+      "start": 24.0,
+      "duration": 6.0,
+      "startFrame": 720,
+      "durationFrames": 180
+    },
+    {
+      "id": "s6",
+      "sign": "ツインレイ",
+      "lines": ["恋愛の流れが大きく変わる、", "その転機が近づいています。"],
+      "entrance": "fade-up",
+      "inlineSpan": { "target": "転機", "color": "gold", "motion": "pop" },
+      "blockSpan": { "color": "default", "motion": "none" },
+      "start": 30.0,
+      "duration": 6.0,
+      "startFrame": 900,
+      "durationFrames": 180
+    },
+    {
+      "id": "s7",
+      "sign": "ツインレイ",
+      "lines": ["あなたの素直な気持ちが、", "奇跡を引き寄せる鍵になります。"],
+      "entrance": "fade-up",
+      "inlineSpan": { "target": "奇跡", "color": "gold", "motion": "glow-pulse" },
+      "blockSpan": { "color": "default", "motion": "none" },
+      "start": 36.0,
+      "duration": 6.0,
+      "startFrame": 1080,
+      "durationFrames": 180
+    },
+    {
+      "id": "s8",
+      "sign": "ツインレイ",
+      "lines": ["恐れを手放したとき、", "愛は自然と戻ってくるでしょう。"],
+      "entrance": "fade-up",
+      "inlineSpan": { "target": "愛", "color": "gold", "motion": "none" },
+      "blockSpan": { "color": "default", "motion": "none" },
+      "start": 42.0,
+      "duration": 6.0,
+      "startFrame": 1260,
+      "durationFrames": 180
+    },
+    {
+      "id": "s9",
+      "sign": "ツインレイ",
+      "lines": ["ツインレイの統合は、", "もうすぐそこまで来ています。"],
+      "entrance": "fade-up",
+      "inlineSpan": { "target": "統合", "color": "platinum", "motion": "glow" },
+      "blockSpan": { "color": "platinum", "motion": "none" },
+      "start": 48.0,
+      "duration": 6.0,
+      "startFrame": 1440,
+      "durationFrames": 180
+    },
+    {
+      "id": "s10",
+      "sign": "ツインレイ",
+      "lines": ["今夜のブルームーンに願いを込め、", "あなたの愛を信じてください。"],
+      "entrance": "fade-up",
+      "inlineSpan": { "target": "ブルームーン", "color": "platinum", "motion": "glow-pulse" },
+      "blockSpan": { "color": "gold", "motion": "none" },
+      "start": 54.0,
+      "duration": 6.0,
+      "startFrame": 1620,
+      "durationFrames": 180
+    }
+  ]
+}
+    </script>
+
+    <!-- ===== 合成本体 ===== -->
     <div
-      id="root"
+      id="main"
       data-composition-id="main"
-      data-start="0"
-      data-duration="12"
       data-width="1920"
       data-height="1080"
+      data-start="0"
+      data-duration="60"
     >
-      <!-- Scene 1: タイトル 0〜5s -->
-      <div id="s1" class="clip scene"
-           data-start="0" data-duration="5" data-track-index="0">
-        <div id="s1-title">HyperFrames</div>
-        <div id="s1-sub">Write HTML. Render Video.</div>
-      </div>
-
-      <!-- Scene 2: フィーチャー 5〜9s -->
-      <div id="s2" class="clip scene"
-           data-start="5" data-duration="4" data-track-index="0">
-        <div id="s2-heading">How it works</div>
-        <div class="feature-row">
-          <div class="feature" id="f1">
-            <div class="feature-icon">📝</div>
-            <div class="feature-label">Write HTML</div>
-            <div class="feature-desc">Plain web tech</div>
-          </div>
-          <div class="feature" id="f2">
-            <div class="feature-icon">🎬</div>
-            <div class="feature-label">Add GSAP</div>
-            <div class="feature-desc">Seekable timeline</div>
-          </div>
-          <div class="feature" id="f3">
-            <div class="feature-icon">🎥</div>
-            <div class="feature-label">Render MP4</div>
-            <div class="feature-desc">Deterministic output</div>
+      <div class="scene clip" id="s1" data-start="0" data-duration="60" data-track-index="0" data-screen-label="01">
+        <div class="scene-content">
+          <div class="text-layer">
+            <!-- 各シーンの黒半透明ボックスをJSがここに生成して重ねる -->
+            <div class="band-grid" id="band"></div>
           </div>
         </div>
-      </div>
-
-      <!-- Scene 3: アウトロ 9〜12s -->
-      <div id="s3" class="clip scene"
-           data-start="9" data-duration="3" data-track-index="0">
-        <div id="s3-text">Open Source</div>
-        <div id="s3-sub">by HeyGen · Apache 2.0</div>
       </div>
     </div>
 
     <script>
+      var data = JSON.parse(document.getElementById("script").textContent);
+      var band = document.getElementById("band");
+      var COLORS = data.meta.presets.colors;
+
+      // target文字列を<span class="hl">で包む（最初の出現のみ、正規表現不使用）
+      function wrapInline(line, target) {
+        var frag = document.createDocumentFragment();
+        if (!target) {
+          frag.appendChild(document.createTextNode(line));
+          return frag;
+        }
+        var idx = line.indexOf(target);
+        if (idx === -1) {
+          frag.appendChild(document.createTextNode(line));
+          return frag;
+        }
+        if (idx > 0) frag.appendChild(document.createTextNode(line.slice(0, idx)));
+        var span = document.createElement("span");
+        span.className = "hl";
+        span.textContent = target;
+        frag.appendChild(span);
+        var rest = line.slice(idx + target.length);
+        if (rest) frag.appendChild(document.createTextNode(rest));
+        return frag;
+      }
+
+      // 各シーンのDOM生成：シーンごとに独立した黒半透明ボックス(.text-band)を作る
+      data.scenes.forEach(function (sc, i) {
+        var box = document.createElement("div");
+        box.className = "text-band";
+        box.id = "box" + i;
+
+        var block = document.createElement("div");
+        block.className = "block";
+        block.id = "blk" + i;
+
+        // blockSpan：ブロック全文をひとつのspanで包み、transform/colorの基点にする
+        var inner = document.createElement("span");
+        inner.className = "block-span";
+        inner.id = "blkspan" + i;
+
+        var target = sc.inlineSpan ? sc.inlineSpan.target : null;
+        sc.lines.forEach(function (ln) {
+          var p = document.createElement("p");
+          p.className = "line";
+          p.appendChild(wrapInline(ln, target));
+          inner.appendChild(p);
+        });
+        block.appendChild(inner);
+        box.appendChild(block);
+        band.appendChild(box);
+      });
+
+      // ---- タイムライン構築 ----
       window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
 
-      const tl = gsap.timeline({ paused: true });
+      // 初期状態：全ボックスを非表示に
+      gsap.set(".text-band", { autoAlpha: 0 });
 
-      // Scene 1: タイトルフェードイン
-      tl.from("#s1-title", { opacity: 0, y: 60, duration: 1.0, ease: "power3.out" }, 0.2)
-        .from("#s1-sub",   { opacity: 0, y: 30, duration: 0.8, ease: "power2.out" }, 1.0);
+      var GLOW = "0 0 30px rgba(255,210,140,0.8), 0 2px 8px rgba(0,0,0,0.7)";
 
-      // Scene 2: フィーチャー順番に出現
-      tl.from("#s2-heading", { opacity: 0, y: -40, duration: 0.6, ease: "power2.out" }, 5.2)
-        .from("#f1", { opacity: 0, y: 50, duration: 0.5, ease: "back.out(1.5)" }, 5.8)
-        .from("#f2", { opacity: 0, y: 50, duration: 0.5, ease: "back.out(1.5)" }, 6.2)
-        .from("#f3", { opacity: 0, y: 50, duration: 0.5, ease: "back.out(1.5)" }, 6.6);
+      // color/motion を対象(targets)に適用する。時刻 at で発火。
+      function applyEmphasis(targets, spec, at) {
+        if (!spec) return;
+        var col = COLORS[spec.color] || COLORS.default;
 
-      // Scene 3: アウトロ
-      tl.from("#s3-text", { opacity: 0, scale: 0.8, duration: 0.7, ease: "back.out(1.7)" }, 9.3)
-        .from("#s3-sub",  { opacity: 0,             duration: 0.5, ease: "power2.out"     }, 10.1);
+        if (spec.motion === "none") {
+          // 色だけ（アニメーション無し）。表示と同時にその色で出す。
+          if (spec.color && spec.color !== "default") {
+            tl.set(targets, { color: col }, at);
+          }
+          return;
+        }
+
+        // motionあり：表示後に色変化＋モーションを見せる
+        if (spec.color && spec.color !== "default") {
+          tl.to(targets, { color: col, duration: 0.5, ease: "power2.out" }, at);
+        }
+        if (spec.motion === "glow") {
+          tl.to(targets, { textShadow: GLOW, duration: 0.6, ease: "power2.out" }, at);
+        } else if (spec.motion === "glow-pulse") {
+          tl.to(
+            targets,
+            { textShadow: GLOW, duration: 0.55, ease: "sine.inOut", yoyo: true, repeat: 1 },
+            at,
+          );
+        } else if (spec.motion === "pop") {
+          tl.to(
+            targets,
+            { scale: 1.08, duration: 0.45, ease: "sine.inOut", yoyo: true, repeat: 1 },
+            at,
+          );
+        }
+      }
+
+      data.scenes.forEach(function (sc, i) {
+        var box = "#box" + i;
+        var blockSpan = "#blkspan" + i;
+        var inlineSpans = "#box" + i + " .hl";
+        var s = sc.start;
+        var d = sc.duration;
+
+        // --- 登場：ボックスごと即時表示（フェードアウトと入れ替わるタイミングで現れる） ---
+        tl.set(box, { autoAlpha: 1 }, s);
+
+        /* === 旧・登場フェードイン（文字だけがフェード）：いったんコメントアウトして残す ===
+        var lines = "#box" + i + " .line";
+        tl.fromTo(
+          lines,
+          { autoAlpha: 0, y: 40 },
+          { autoAlpha: 1, y: 0, duration: 0.9, ease: "power3.out", stagger: 0.15 },
+          s + 0.3,
+        );
+        === ここまで旧・登場フェードイン === */
+
+        // --- 強調（color × motion）：表示直後に発火 ---
+        applyEmphasis(blockSpan, sc.blockSpan, s + 0.4);
+        if (sc.inlineSpan && document.querySelector(inlineSpans)) {
+          applyEmphasis(inlineSpans, sc.inlineSpan, s + 0.6);
+        }
+
+        // --- 退場：黒半透明ボックスごとフェードアウト（中の文字も一緒に消える） ---
+        //     最終シーンはそのまま残す
+        if (i < data.scenes.length - 1) {
+          tl.to(box, { autoAlpha: 0, duration: 0.6, ease: "power2.inOut" }, s + d - 0.6);
+        }
+      });
 
       window.__timelines["main"] = tl;
     </script>
   </body>
 </html>
-
