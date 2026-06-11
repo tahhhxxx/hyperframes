@@ -3,30 +3,30 @@ name: Render Compositions
 on:
   push:
     paths:
-      - 'compositions/**'
+      - 'my-video/**'        # ← 監視対象を実プロジェクトに
+  workflow_dispatch:          # 手動実行ボタンも付けておくと楽
 
 jobs:
   render:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      - name: Install FFmpeg
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg --fix-missing
+      - uses: FedericoCarboni/setup-ffmpeg@v3
+
+      - name: Install headless browser
+        working-directory: my-video
+        run: npx hyperframes browser --install   # ← Chromeの取りこぼし対策
 
       - name: Render
-        run: npx hyperframes render
+        working-directory: my-video              # ← ここがキモ
+        run: npx hyperframes render --output output.mp4
 
-      - name: Upload MP4 artifacts
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: rendered-mp4
-          path: '**/*.mp4'
+          path: my-video/output.mp4
