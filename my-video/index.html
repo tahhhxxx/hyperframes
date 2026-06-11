@@ -379,7 +379,9 @@
       var tl = gsap.timeline({ paused: true });
 
       // 初期状態：全ボックスを非表示に
-      gsap.set(".text-band", { autoAlpha: 0 });
+      // gsap.set(".text-band", { autoAlpha: 0 });
+
+      tl.set(".text-band", { autoAlpha: 0 }, 0);
 
       var GLOW = "0 0 30px rgba(255,210,140,0.8), 0 2px 8px rgba(0,0,0,0.7)";
 
