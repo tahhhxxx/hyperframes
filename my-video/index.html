@@ -97,6 +97,10 @@
         background: rgba(0, 0, 0, 0.35);
         /* 可視状態は GSAP が opacity で制御（ボックスごとフェードアウト） */
         opacity: 0;
+        /* フェードを毎フレーム再描画ではなくGPU合成にする（もっさり対策） */
+        will-change: transform, opacity;
+        transform: translateZ(0);
+        backface-visibility: hidden;
       }
       /* シーンごとのテキストブロック */
       .block {
@@ -125,7 +129,7 @@
       .hl {
         display: inline-block;
         transform-origin: center center;
-        will-change: transform, color;
+        will-change: transform;
       }
       /* blockSpan用：ブロック全体のtransform基点 */
       .block-span {
@@ -379,45 +383,52 @@
       var tl = gsap.timeline({ paused: true });
 
       // 初期状態：全ボックスを非表示に
-      // gsap.set(".text-band", { autoAlpha: 0 });
+      gsap.set(".text-band", { autoAlpha: 0 });
 
-      tl.set(".text-band", { autoAlpha: 0 }, 0);
-
-      var GLOW = "0 0 30px rgba(255,210,140,0.8), 0 2px 8px rgba(0,0,0,0.7)";
+      var GLOW = "0 0 30px rgba(255,210,140,0.85), 0 2px 8px rgba(0,0,0,0.7)";
 
       // color/motion を対象(targets)に適用する。時刻 at で発火。
+      // ※ text-shadow を毎フレームtweenすると重い→ glow は set で一度だけ点灯し、
+      //    脈動表現は scale で行う（GPUに乗るので軽い）。
       function applyEmphasis(targets, spec, at) {
         if (!spec) return;
         var col = COLORS[spec.color] || COLORS.default;
 
-        if (spec.motion === "none") {
-          // 色だけ（アニメーション無し）。表示と同時にその色で出す。
-          if (spec.color && spec.color !== "default") {
+        // 色は常に set（瞬時）。motion=none なら色だけ。
+        if (spec.color && spec.color !== "default") {
+          if (spec.motion === "none") {
             tl.set(targets, { color: col }, at);
+          } else {
+            tl.to(targets, { color: col, duration: 0.4, ease: "power1.out" }, at);
           }
-          return;
         }
 
-        // motionあり：表示後に色変化＋モーションを見せる
-        if (spec.color && spec.color !== "default") {
-          tl.to(targets, { color: col, duration: 0.5, ease: "power2.out" }, at);
-        }
         if (spec.motion === "glow") {
-          tl.to(targets, { textShadow: GLOW, duration: 0.6, ease: "power2.out" }, at);
+          // 発光を一度だけ点灯（再描画は1回）。
+          tl.set(targets, { textShadow: GLOW }, at + 0.2);
         } else if (spec.motion === "glow-pulse") {
-          tl.to(
+          // 発光を点灯しつつ、脈動は scale で表現（text-shadowはアニメしない）。
+          tl.set(targets, { textShadow: GLOW }, at + 0.2);
+          tl.fromTo(
             targets,
-            { textShadow: GLOW, duration: 0.55, ease: "sine.inOut", yoyo: true, repeat: 1 },
-            at,
+            { scale: 1 },
+            { scale: 1.06, duration: 0.45, ease: "sine.inOut", yoyo: true, repeat: 1 },
+            at + 0.2,
           );
         } else if (spec.motion === "pop") {
-          tl.to(
+          tl.fromTo(
             targets,
+            { scale: 1 },
             { scale: 1.08, duration: 0.45, ease: "sine.inOut", yoyo: true, repeat: 1 },
             at,
           );
         }
       }
+
+      // フェード尺（短めにして「もっさり」を回避。power1系で均等サンプリング）
+      var IN_DUR = 0.45; // 下からフェードアップしてくる時間
+      var OUT_DUR = 0.4; // フェードアウトの時間
+      var OVERLAP = 0.25; // 次のテキストが「前が消えきる前」に入り始める量＝空白ゼロ
 
       data.scenes.forEach(function (sc, i) {
         var box = "#box" + i;
@@ -426,29 +437,25 @@
         var s = sc.start;
         var d = sc.duration;
 
-        // --- 登場：ボックスごと即時表示（フェードアウトと入れ替わるタイミングで現れる） ---
-        tl.set(box, { autoAlpha: 1 }, s);
-
-        /* === 旧・登場フェードイン（文字だけがフェード）：いったんコメントアウトして残す ===
-        var lines = "#box" + i + " .line";
+        // --- 登場：下からフェードアップ ---
+        //     2シーン目以降は境界より OVERLAP 早く入り始め、前のフェードアウトと重ねる＝空白なし
+        var inStart = i === 0 ? s : s - OVERLAP;
         tl.fromTo(
-          lines,
-          { autoAlpha: 0, y: 40 },
-          { autoAlpha: 1, y: 0, duration: 0.9, ease: "power3.out", stagger: 0.15 },
-          s + 0.3,
+          box,
+          { autoAlpha: 0, y: 28 },
+          { autoAlpha: 1, y: 0, duration: IN_DUR, ease: "power1.out" },
+          inStart,
         );
-        === ここまで旧・登場フェードイン === */
 
         // --- 強調（color × motion）：表示直後に発火 ---
-        applyEmphasis(blockSpan, sc.blockSpan, s + 0.4);
+        applyEmphasis(blockSpan, sc.blockSpan, s + 0.3);
         if (sc.inlineSpan && document.querySelector(inlineSpans)) {
-          applyEmphasis(inlineSpans, sc.inlineSpan, s + 0.6);
+          applyEmphasis(inlineSpans, sc.inlineSpan, s + 0.45);
         }
 
-        // --- 退場：黒半透明ボックスごとフェードアウト（中の文字も一緒に消える） ---
-        //     最終シーンはそのまま残す
+        // --- 退場：境界ちょうどで消えきるようにフェードアウト（最終シーンは残す） ---
         if (i < data.scenes.length - 1) {
-          tl.to(box, { autoAlpha: 0, duration: 0.6, ease: "power2.inOut" }, s + d - 0.6);
+          tl.to(box, { autoAlpha: 0, duration: OUT_DUR, ease: "power1.in" }, s + d - OUT_DUR);
         }
       });
 
