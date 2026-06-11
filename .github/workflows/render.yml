@@ -3,12 +3,14 @@ name: Render Compositions
 on:
   push:
     paths:
-      - 'my-video/**'        # ← 監視対象を実プロジェクトに
-  workflow_dispatch:          # 手動実行ボタンも付けておくと楽
+      - 'my-video/**'
+  workflow_dispatch:
 
 jobs:
   render:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true   # ← これを追加
     steps:
       - uses: actions/checkout@v4
 
@@ -20,14 +22,13 @@ jobs:
 
       - name: Install headless browser
         working-directory: my-video
-        run: npx hyperframes browser --install   # ← Chromeの取りこぼし対策
+        run: npx hyperframes browser --install
 
       - name: Render
-        working-directory: my-video              # ← ここがキモ
+        working-directory: my-video
         run: npx hyperframes render --output output.mp4
 
       - uses: actions/upload-artifact@v4
         with:
           name: rendered-mp4
           path: my-video/output.mp4
-          
